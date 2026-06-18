@@ -1,0 +1,269 @@
+return function()
+    local Players = game:GetService("Players")
+    local UserInputService = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+    local Debris = game:GetService("Debris")
+    
+    local player = Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local rootPart = character:WaitForChild("HumanoidRootPart")
+    
+    -- GUI
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "DeltaAdmin"
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+    
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 350, 0, 450)
+    mainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    mainFrame.BackgroundTransparency = 0.1
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+    mainFrame.Parent = screenGui
+    mainFrame.Visible = true
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = mainFrame
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.BackgroundTransparency = 1
+    title.Text = "⚡ Delta Admin"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.TextScaled = true
+    title.Font = Enum.Font.GothamBold
+    title.Parent = mainFrame
+    
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 40, 0, 40)
+    closeBtn.Position = UDim2.new(1, -45, 0, 5)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    closeBtn.Text = "✕"
+    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeBtn.TextScaled = true
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.BorderSizePixel = 0
+    closeBtn.Parent = mainFrame
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = closeBtn
+    closeBtn.MouseButton1Click:Connect(function() screenGui:Destroy() end)
+    
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Size = UDim2.new(1, -20, 1, -60)
+    scroll.Position = UDim2.new(0, 10, 0, 50)
+    scroll.BackgroundTransparency = 1
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scroll.ScrollBarThickness = 5
+    scroll.Parent = mainFrame
+    
+    local list = Instance.new("UIListLayout")
+    list.SortOrder = Enum.SortOrder.LayoutOrder
+    list.Padding = UDim.new(0, 8)
+    list.Parent = scroll
+    
+    local function btn(text, color, cb)
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(1, 0, 0, 45)
+        b.BackgroundColor3 = color or Color3.fromRGB(45, 45, 60)
+        b.Text = text
+        b.TextColor3 = Color3.fromRGB(255, 255, 255)
+        b.TextScaled = true
+        b.Font = Enum.Font.GothamMedium
+        b.BorderSizePixel = 0
+        b.Parent = scroll
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0, 8)
+        c.Parent = b
+        b.MouseButton1Click:Connect(cb)
+    end
+    
+    -- Anti-Voice-Ban
+    btn("🔇 Anti-Voice-Ban", Color3.fromRGB(50, 100, 255), function()
+        local voice = game:GetService("VoiceChatService")
+        if voice then
+            spawn(function()
+                while wait(0.1) do
+                    pcall(function() voice:NotifySpeakingStatus(true) end)
+                end
+            end)
+        end
+        local old
+        old = hookmetamethod(game, "__namecall", function(s,...)
+            local m = getnamecallmethod()
+            if m == "Kick" or m == "Ban" then
+                local a = tostring({...}[1] or "")
+                if a:lower():find("voice") or a:lower():find("mic") then return nil end
+            end
+            return old(s, ...)
+        end)
+        print("✅ Anti-Voice-Ban aktiviert!")
+    end)
+    
+    -- Anti-Ban
+    btn("🛡️ Anti-Ban", Color3.fromRGB(255, 50, 100), function()
+        local oldKick = game.Kick
+        game.Kick = function(...) return false end
+        print("🛡️ Anti-Ban aktiviert!")
+    end)
+    
+    -- Teleport
+    btn("🌀 Teleport", Color3.fromRGB(50, 200, 100), function()
+        local box = Instance.new("TextBox")
+        box.Size = UDim2.new(0, 200, 0, 40)
+        box.Position = UDim2.new(0.5, -100, 0.5, -20)
+        box.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+        box.TextColor3 = Color3.fromRGB(255, 255, 255)
+        box.PlaceholderText = "Spielername"
+        box.Font = Enum.Font.Gotham
+        box.TextScaled = true
+        box.Parent = mainFrame
+        box.FocusLost:Connect(function(enter)
+            if enter and box.Text ~= "" then
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p.Name:lower():find(box.Text:lower()) then
+                        local c = p.Character
+                        if c and c:FindFirstChild("HumanoidRootPart") then
+                            rootPart.CFrame = c.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
+                        end
+                    end
+                end
+                box:Destroy()
+            end
+        end)
+        Debris:AddItem(box, 5)
+    end)
+    
+    -- Kill
+    btn("💀 Töten", Color3.fromRGB(255, 50, 50), function()
+        local box = Instance.new("TextBox")
+        box.Size = UDim2.new(0, 200, 0, 40)
+        box.Position = UDim2.new(0.5, -100, 0.5, -20)
+        box.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+        box.TextColor3 = Color3.fromRGB(255, 255, 255)
+        box.PlaceholderText = "Spielername"
+        box.Font = Enum.Font.Gotham
+        box.TextScaled = true
+        box.Parent = mainFrame
+        box.FocusLost:Connect(function(enter)
+            if enter and box.Text ~= "" then
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p.Name:lower():find(box.Text:lower()) then
+                        local c = p.Character
+                        if c then
+                            local h = c:FindFirstChild("Humanoid")
+                            if h then h.Health = 0 end
+                        end
+                    end
+                end
+                box:Destroy()
+            end
+        end)
+        Debris:AddItem(box, 5)
+    end)
+    
+    -- Freeze
+    btn("❄️ Freeze", Color3.fromRGB(100, 200, 255), function()
+        local box = Instance.new("TextBox")
+        box.Size = UDim2.new(0, 200, 0, 40)
+        box.Position = UDim2.new(0.5, -100, 0.5, -20)
+        box.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+        box.TextColor3 = Color3.fromRGB(255, 255, 255)
+        box.PlaceholderText = "Spielername"
+        box.Font = Enum.Font.Gotham
+        box.TextScaled = true
+        box.Parent = mainFrame
+        box.FocusLost:Connect(function(enter)
+            if enter and box.Text ~= "" then
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p.Name:lower():find(box.Text:lower()) then
+                        local c = p.Character
+                        if c then
+                            for _, part in pairs(c:GetDescendants()) do
+                                if part:IsA("BasePart") then
+                                    part.Anchored = not part.Anchored
+                                end
+                            end
+                        end
+                    end
+                end
+                box:Destroy()
+            end
+        end)
+        Debris:AddItem(box, 5)
+    end)
+    
+    -- Fly
+    local flying = false
+    local flyBV, flyConn
+    btn("🦅 Fly", Color3.fromRGB(255, 200, 50), function()
+        flying = not flying
+        if flying then
+            local bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(1,1,1) * 10000
+            bv.Velocity = Vector3.new(0,10,0)
+            bv.Parent = rootPart
+            flyBV = bv
+            flyConn = RunService.Heartbeat:Connect(function()
+                if flying and rootPart and flyBV then
+                    flyBV.Velocity = Vector3.new(0,10,0)
+                end
+            end)
+            print("🦅 Fly an")
+        else
+            if flyBV then flyBV:Destroy(); flyBV = nil end
+            if flyConn then flyConn:Disconnect(); flyConn = nil end
+            print("🛑 Fly aus")
+        end
+    end)
+    
+    -- Lag
+    btn("🐌 Lag", Color3.fromRGB(255, 0, 150), function()
+        local f = Instance.new("Folder")
+        f.Name = "LagFolder"
+        f.Parent = workspace
+        for i = 1, 5000 do
+            local p = Instance.new("Part")
+            p.Size = Vector3.new(1,1,1)
+            p.Anchored = true
+            p.CanCollide = false
+            p.Transparency = 0.9
+            p.Material = Enum.Material.Neon
+            p.CFrame = CFrame.new(math.random(-500,500), math.random(-500,500), math.random(-500,500))
+            p.Parent = f
+        end
+        print("🐌 5000 Teile")
+    end)
+    
+    -- Cleanup
+    btn("🧹 Cleanup", Color3.fromRGB(100, 100, 100), function()
+        for _, o in pairs(workspace:GetDescendants()) do
+            if o:IsA("Part") and o.Material == Enum.Material.Neon then
+                o:Destroy()
+            end
+        end
+        local f = workspace:FindFirstChild("LagFolder")
+        if f then f:Destroy() end
+        print("🧹 Aufgeräumt")
+    end)
+    
+    -- 3-Finger-Tap
+    local taps = 0
+    local last = 0
+    UserInputService.TouchStarted:Connect(function(touch)
+        if touch.Position.X > 50 and touch.Position.Y > 50 then
+            local now = tick()
+            if now - last < 0.5 then taps = taps + 1 else taps = 1 end
+            last = now
+            if taps >= 3 then
+                mainFrame.Visible = not mainFrame.Visible
+                taps = 0
+            end
+        end
+    end)
+    
+    print("⚡ Delta Admin geladen! (3-Finger-Tap)")
+end
