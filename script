@@ -3,16 +3,63 @@ return function()
     local UserInputService = game:GetService("UserInputService")
     local RunService = game:GetService("RunService")
     local Debris = game:GetService("Debris")
-    
+    local TweenService = game:GetService("TweenService")
+
     local player = Players.LocalPlayer
     local character = player.Character or player.CharacterAdded:Wait()
     local rootPart = character:WaitForChild("HumanoidRootPart")
-    
-    -- GUI
+
+    -- =====================================
+    -- GUI ERSTELLEN
+    -- =====================================
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "DeltaAdmin"
     screenGui.Parent = player:WaitForChild("PlayerGui")
-    
+    screenGui.ResetOnSpawn = false
+
+    -- 1. DER TOGGLE-BUTTON (immer sichtbar, mit Standard-Design)
+    local toggleButton = Instance.new("ImageButton")
+    toggleButton.Size = UDim2.new(0, 70, 0, 70)
+    toggleButton.Position = UDim2.new(0, 15, 0, 100) -- Links oben
+    toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255) -- Leuchtendes Blau
+    toggleButton.BackgroundTransparency = 0.1
+    toggleButton.BorderSizePixel = 0
+    toggleButton.Image = "rbxassetid://6031091079" -- Standard-Roblox-Icon (Zahnrad)
+    toggleButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    toggleButton.ImageTransparency = 0.2
+    toggleButton.Parent = screenGui
+
+    -- Abgerundete Ecken + Glow-Effekt
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 35) -- Perfekt rund
+    btnCorner.Parent = toggleButton
+
+    -- Ein kleiner Schatten für bessere Sichtbarkeit
+    local shadow = Instance.new("ImageLabel")
+    shadow.Size = UDim2.new(1.2, 0, 1.2, 0)
+    shadow.Position = UDim2.new(-0.1, 0, -0.1, 0)
+    shadow.BackgroundTransparency = 1
+    shadow.Image = "rbxassetid://1313926463" -- Soft-Shadow
+    shadow.ImageTransparency = 0.5
+    shadow.Parent = toggleButton
+
+    -- Klick-Feedback (Animation + Sound-Effekt)
+    toggleButton.MouseButton1Click:Connect(function()
+        -- Kurze Aufhell-Animation
+        TweenService:Create(toggleButton, TweenInfo.new(0.1), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(toggleButton, TweenInfo.new(0.1), {Size = UDim2.new(0, 75, 0, 75)}):Play()
+        task.wait(0.1)
+        TweenService:Create(toggleButton, TweenInfo.new(0.1), {BackgroundTransparency = 0.1}):Play()
+        TweenService:Create(toggleButton, TweenInfo.new(0.1), {Size = UDim2.new(0, 70, 0, 70)}):Play()
+        
+        -- Menü ein-/ausblenden
+        mainFrame.Visible = not mainFrame.Visible
+    end)
+
+    -- Button immer im Vordergrund (damit er nicht vom Menü verdeckt wird)
+    toggleButton.ZIndex = 10
+
+    -- 2. DAS EIGENTLICHE MENÜ
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, 350, 0, 450)
     mainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
@@ -22,12 +69,12 @@ return function()
     mainFrame.Active = true
     mainFrame.Draggable = true
     mainFrame.Parent = screenGui
-    mainFrame.Visible = true
-    
+    mainFrame.Visible = false -- Startet ausgeblendet
+
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 12)
     corner.Parent = mainFrame
-    
+
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, 0, 0, 40)
     title.BackgroundTransparency = 1
@@ -36,7 +83,7 @@ return function()
     title.TextScaled = true
     title.Font = Enum.Font.GothamBold
     title.Parent = mainFrame
-    
+
     local closeBtn = Instance.new("TextButton")
     closeBtn.Size = UDim2.new(0, 40, 0, 40)
     closeBtn.Position = UDim2.new(1, -45, 0, 5)
@@ -47,11 +94,13 @@ return function()
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.BorderSizePixel = 0
     closeBtn.Parent = mainFrame
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
-    btnCorner.Parent = closeBtn
-    closeBtn.MouseButton1Click:Connect(function() screenGui:Destroy() end)
-    
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 6)
+    closeCorner.Parent = closeBtn
+    closeBtn.MouseButton1Click:Connect(function()
+        mainFrame.Visible = false
+    end)
+
     local scroll = Instance.new("ScrollingFrame")
     scroll.Size = UDim2.new(1, -20, 1, -60)
     scroll.Position = UDim2.new(0, 10, 0, 50)
@@ -59,12 +108,12 @@ return function()
     scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
     scroll.ScrollBarThickness = 5
     scroll.Parent = mainFrame
-    
+
     local list = Instance.new("UIListLayout")
     list.SortOrder = Enum.SortOrder.LayoutOrder
     list.Padding = UDim.new(0, 8)
     list.Parent = scroll
-    
+
     local function btn(text, color, cb)
         local b = Instance.new("TextButton")
         b.Size = UDim2.new(1, 0, 0, 45)
@@ -80,8 +129,11 @@ return function()
         c.Parent = b
         b.MouseButton1Click:Connect(cb)
     end
-    
-    -- Anti-Voice-Ban
+
+    -- =====================================
+    -- ALLE FUNKTIONEN (wie gehabt)
+    -- =====================================
+
     btn("🔇 Anti-Voice-Ban", Color3.fromRGB(50, 100, 255), function()
         local voice = game:GetService("VoiceChatService")
         if voice then
@@ -102,15 +154,13 @@ return function()
         end)
         print("✅ Anti-Voice-Ban aktiviert!")
     end)
-    
-    -- Anti-Ban
+
     btn("🛡️ Anti-Ban", Color3.fromRGB(255, 50, 100), function()
         local oldKick = game.Kick
         game.Kick = function(...) return false end
         print("🛡️ Anti-Ban aktiviert!")
     end)
-    
-    -- Teleport
+
     btn("🌀 Teleport", Color3.fromRGB(50, 200, 100), function()
         local box = Instance.new("TextBox")
         box.Size = UDim2.new(0, 200, 0, 40)
@@ -136,8 +186,7 @@ return function()
         end)
         Debris:AddItem(box, 5)
     end)
-    
-    -- Kill
+
     btn("💀 Töten", Color3.fromRGB(255, 50, 50), function()
         local box = Instance.new("TextBox")
         box.Size = UDim2.new(0, 200, 0, 40)
@@ -164,8 +213,7 @@ return function()
         end)
         Debris:AddItem(box, 5)
     end)
-    
-    -- Freeze
+
     btn("❄️ Freeze", Color3.fromRGB(100, 200, 255), function()
         local box = Instance.new("TextBox")
         box.Size = UDim2.new(0, 200, 0, 40)
@@ -195,8 +243,7 @@ return function()
         end)
         Debris:AddItem(box, 5)
     end)
-    
-    -- Fly
+
     local flying = false
     local flyBV, flyConn
     btn("🦅 Fly", Color3.fromRGB(255, 200, 50), function()
@@ -219,8 +266,7 @@ return function()
             print("🛑 Fly aus")
         end
     end)
-    
-    -- Lag
+
     btn("🐌 Lag", Color3.fromRGB(255, 0, 150), function()
         local f = Instance.new("Folder")
         f.Name = "LagFolder"
@@ -237,8 +283,7 @@ return function()
         end
         print("🐌 5000 Teile")
     end)
-    
-    -- Cleanup
+
     btn("🧹 Cleanup", Color3.fromRGB(100, 100, 100), function()
         for _, o in pairs(workspace:GetDescendants()) do
             if o:IsA("Part") and o.Material == Enum.Material.Neon then
@@ -249,21 +294,12 @@ return function()
         if f then f:Destroy() end
         print("🧹 Aufgeräumt")
     end)
-    
-    -- 3-Finger-Tap
-    local taps = 0
-    local last = 0
-    UserInputService.TouchStarted:Connect(function(touch)
-        if touch.Position.X > 50 and touch.Position.Y > 50 then
-            local now = tick()
-            if now - last < 0.5 then taps = taps + 1 else taps = 1 end
-            last = now
-            if taps >= 3 then
-                mainFrame.Visible = not mainFrame.Visible
-                taps = 0
-            end
-        end
-    end)
-    
-    print("⚡ Delta Admin geladen! (3-Finger-Tap)")
+
+    -- =====================================
+    -- START
+    -- =====================================
+    print("========================================")
+    print("⚡ DELTA ADMIN MENU geladen!")
+    print("📱 Klicke auf den blauen Button (⚙️)")
+    print("========================================")
 end
